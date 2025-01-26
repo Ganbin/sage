@@ -24,30 +24,10 @@ interface NftDataParams {
 interface NftDataState {
   nfts: NftRecord[];
   collections: NftCollectionRecord[];
-  ownerDids: DidRecord[];
-  minterDids: DidRecord[];
-  owner: DidRecord | null;
   collection: NftCollectionRecord | null;
   isLoading: boolean;
   nftTotal: number;
   collectionTotal: number;
-  ownerDidsTotal: number;
-  minterDidsTotal: number;
-}
-
-// Helper function moved from NftList
-function createDefaultDidRecord(name: string, launcherId: string): DidRecord {
-  return {
-    name,
-    launcher_id: launcherId,
-    visible: true,
-    coin_id: 'No coin',
-    address: 'No address',
-    amount: 0,
-    created_height: 0,
-    create_transaction_id: 'No transaction',
-    recovery_hash: '',
-  };
 }
 
 export function useNftData(params: NftDataParams) {
@@ -55,15 +35,10 @@ export function useNftData(params: NftDataParams) {
   const [state, setState] = useState<NftDataState>({
     nfts: [],
     collections: [],
-    ownerDids: [],
-    minterDids: [],
-    owner: null,
     collection: null,
     isLoading: false,
     nftTotal: 0,
     collectionTotal: 0,
-    ownerDidsTotal: 0,
-    minterDidsTotal: 0,
   });
 
   const updateNfts = useCallback(
@@ -109,18 +84,6 @@ export function useNftData(params: NftDataParams) {
                   : params.collectionId,
             });
             updates.collection = collectionResponse.collection;
-          } else if (params.ownerDid) {
-            const didResponse = await commands.getDids({});
-            const foundDid = didResponse.dids.find(
-              (did) => did.launcher_id === params.ownerDid,
-            );
-            updates.owner =
-              foundDid || createDefaultDidRecord('Unassigned NFTs', 'No did');
-          } else if (params.minterDid) {
-            updates.owner = createDefaultDidRecord(
-              params.minterDid,
-              params.minterDid,
-            );
           }
 
           setState((prev) => ({ ...prev, ...updates }));
@@ -134,7 +97,6 @@ export function useNftData(params: NftDataParams) {
 
             const collections = response.collections;
 
-            // Add No Collection to the end if we're on the last page and there's room
             if (
               collections.length < params.pageSize &&
               page === Math.ceil((response.total + 1) / params.pageSize)
@@ -152,79 +114,13 @@ export function useNftData(params: NftDataParams) {
             setState((prev) => ({
               ...prev,
               collections,
-              collectionTotal: response.total + 1, // Add 1 for No Collection
+              collectionTotal: response.total + 1,
             }));
           } catch (error: any) {
             setState((prev) => ({
               ...prev,
               collections: [],
               collectionTotal: 0,
-            }));
-            addError(error);
-          }
-        } else if (params.group === NftGroupMode.OwnerDid) {
-          try {
-            const response = await commands.getDids({});
-            const ownerDids = response.dids;
-
-            // Add Unassigned NFTs to the end if there's room on the last page
-            if (
-              ownerDids.length < params.pageSize &&
-              page === Math.ceil((ownerDids.length + 1) / params.pageSize)
-            ) {
-              ownerDids.push(
-                createDefaultDidRecord('Unassigned NFTs', 'No did'),
-              );
-            }
-
-            setState((prev) => ({
-              ...prev,
-              ownerDids,
-              ownerDidsTotal: response.dids.length + 1, // Add 1 for Unassigned NFTs
-            }));
-          } catch (error: any) {
-            setState((prev) => ({
-              ...prev,
-              ownerDids: [],
-              ownerDidsTotal: 0,
-            }));
-            addError(error);
-          }
-        } else if (params.group === NftGroupMode.MinterDid) {
-          try {
-            const uniqueMinterDids = await commands.getMinterDidIds({
-              limit: params.pageSize,
-              offset: (page - 1) * params.pageSize,
-            });
-
-            const minterDids: DidRecord[] = uniqueMinterDids.did_ids.map(
-              (did) =>
-                createDefaultDidRecord(
-                  `${did.replace('did:chia:', '').slice(0, 16)}...`,
-                  did,
-                ),
-            );
-
-            // Add Unknown Minter to the end of the list if we're on the last page
-            if (
-              minterDids.length < params.pageSize &&
-              page === Math.ceil((uniqueMinterDids.total + 1) / params.pageSize)
-            ) {
-              minterDids.push(
-                createDefaultDidRecord('Unknown Minter', 'No did'),
-              );
-            }
-
-            setState((prev) => ({
-              ...prev,
-              minterDids,
-              minterDidsTotal: uniqueMinterDids.total + 1, // Add 1 for Unknown Minter
-            }));
-          } catch (error: any) {
-            setState((prev) => ({
-              ...prev,
-              minterDids: [],
-              minterDidsTotal: 0,
             }));
             addError(error);
           }
@@ -255,10 +151,7 @@ export function useNftData(params: NftDataParams) {
       ...prev,
       nfts: [],
       collections: [],
-      ownerDids: [],
-      minterDids: [],
       collection: null,
-      owner: null,
     }));
     updateNfts(params.page);
   }, [
@@ -287,21 +180,15 @@ export function useNftData(params: NftDataParams) {
     };
   }, [updateNfts, params.page]);
 
-  // Helper function to get the correct total based on current view
   const getTotal = useCallback(() => {
     if (
       params.collectionId ||
       params.ownerDid ||
       params.minterDid ||
-      params.group === NftGroupMode.None
+      params.group === NftGroupMode.None ||
+      params.group === NftGroupMode.Collection
     ) {
       return state.nftTotal;
-    } else if (params.group === NftGroupMode.Collection) {
-      return state.collectionTotal;
-    } else if (params.group === NftGroupMode.OwnerDid) {
-      return state.ownerDidsTotal;
-    } else if (params.group === NftGroupMode.MinterDid) {
-      return state.minterDidsTotal;
     }
     return 0;
   }, [
@@ -310,17 +197,11 @@ export function useNftData(params: NftDataParams) {
     params.minterDid,
     params.group,
     state.nftTotal,
-    state.collectionTotal,
-    state.ownerDidsTotal,
-    state.minterDidsTotal,
   ]);
 
   return {
     nfts: state.nfts,
     collections: state.collections,
-    ownerDids: state.ownerDids,
-    minterDids: state.minterDids,
-    owner: state.owner,
     collection: state.collection,
     isLoading: state.isLoading,
     total: getTotal(),
