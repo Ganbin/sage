@@ -21,6 +21,9 @@ interface NftCardListProps {
   ownerDids: DidRecord[];
   minterDids: DidRecord[];
   updateNfts: (page: number) => void;
+  updateCollectionProfiles: () => void;
+  updateOwnerProfiles: () => void;
+  updateMinterProfiles: () => void;
   page: number;
   multiSelect?: boolean;
   selected?: string[];
@@ -39,6 +42,9 @@ export function NftCardList({
   ownerDids,
   minterDids,
   updateNfts,
+  updateCollectionProfiles,
+  updateOwnerProfiles,
+  updateMinterProfiles,
   page,
   multiSelect = false,
   selected = [],

@@ -16,6 +16,7 @@ import { useErrors } from '@/hooks/useErrors';
 import { t } from '@lingui/core/macro';
 import { useNftOwnerProfiles } from '@/hooks/useNftOwnerProfiles';
 import { useNftMinterProfiles } from '@/hooks/useNftMinterProfiles';
+import { useNftCollectionProfiles } from '@/hooks/useNftCollectionProfiles';
 
 export function NftList() {
   const navigate = useNavigate();
@@ -32,8 +33,6 @@ export function NftList() {
 
   const {
     nfts,
-    collections,
-    collection,
     isLoading: isLoadingNfts,
     updateNfts,
     total: nftTotal,
@@ -50,10 +49,25 @@ export function NftList() {
   });
 
   const {
+    collections,
+    collection,
+    isLoading: isLoadingCollections,
+    collectionsTotal,
+    updateCollectionProfiles,
+  } = useNftCollectionProfiles({
+    pageSize,
+    page: params.page,
+    group,
+    showHidden,
+    collectionId,
+  });
+
+  const {
     ownerDids,
     owner,
     isLoading: isLoadingOwners,
     ownerDidsTotal,
+    updateOwnerProfiles,
   } = useNftOwnerProfiles({
     pageSize,
     page: params.page,
@@ -67,6 +81,7 @@ export function NftList() {
     minter,
     isLoading: isLoadingMinters,
     minterDidsTotal,
+    updateMinterProfiles,
   } = useNftMinterProfiles({
     pageSize,
     page: params.page,
@@ -106,31 +121,24 @@ export function NftList() {
 
   // Calculate total based on current view
   const total = useMemo(() => {
-    if (
-      collectionId ||
-      ownerDid ||
-      minterDid ||
-      group === NftGroupMode.None ||
-      group === NftGroupMode.Collection
-    ) {
-      return nftTotal;
+    if (group === NftGroupMode.Collection && !collectionId) {
+      return collectionsTotal;
     } else if (group === NftGroupMode.OwnerDid) {
       return ownerDidsTotal;
     } else if (group === NftGroupMode.MinterDid) {
       return minterDidsTotal;
     }
-    return 0;
+    return nftTotal;
   }, [
-    collectionId,
-    ownerDid,
-    minterDid,
     group,
+    collectionId,
     nftTotal,
+    collectionsTotal,
     ownerDidsTotal,
     minterDidsTotal,
   ]);
 
-  const isLoading = isLoadingNfts || isLoadingOwners || isLoadingMinters;
+  const isLoading = isLoadingNfts || isLoadingOwners || isLoadingMinters || isLoadingCollections;
 
   return (
     <>
@@ -185,6 +193,9 @@ export function NftList() {
             ownerDids={ownerDids}
             minterDids={minterDids}
             updateNfts={updateNfts}
+            updateCollectionProfiles={updateCollectionProfiles}
+            updateOwnerProfiles={updateOwnerProfiles}
+            updateMinterProfiles={updateMinterProfiles}
             page={params.page}
             multiSelect={multiSelect}
             selected={selected}

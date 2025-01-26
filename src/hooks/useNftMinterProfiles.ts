@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { commands, DidRecord } from '../bindings';
 import { useErrors } from './useErrors';
 import { NftGroupMode } from './useNftParams';
+import { events } from '../bindings';
 
 // Helper function for creating default DID records
 function createDefaultDidRecord(name: string, launcherId: string): DidRecord {
@@ -91,6 +92,21 @@ export function useNftMinterProfiles(params: MinterProfilesParams) {
             minter: null,
         }));
         updateMinterProfiles();
+    }, [updateMinterProfiles]);
+
+    useEffect(() => {
+        const unlisten = events.syncEvent.listen((event) => {
+            const type = event.payload.type;
+            if (type === 'coin_state' ||
+                type === 'puzzle_batch_synced' ||
+                type === 'nft_data') {
+                updateMinterProfiles();
+            }
+        });
+
+        return () => {
+            unlisten.then((u) => u());
+        };
     }, [updateMinterProfiles]);
 
     return {
