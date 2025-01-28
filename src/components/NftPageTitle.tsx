@@ -14,6 +14,7 @@ interface NftPageTitleProps {
   ownerDid?: string | null;
   owner?: DidRecord | null;
   minterDid?: string | null;
+  minter: DidRecord | null;
   group?: NftGroupMode;
 }
 

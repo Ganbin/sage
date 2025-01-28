@@ -9,11 +9,14 @@ import { Button } from '@/components/ui/button';
 import { useNftParams, NftGroupMode } from '@/hooks/useNftParams';
 import { Trans } from '@lingui/react/macro';
 import { ImagePlusIcon, EyeIcon } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useNftData } from '@/hooks/useNftData';
 import { useErrors } from '@/hooks/useErrors';
 import { t } from '@lingui/core/macro';
+import { useNftOwnerProfiles } from '@/hooks/useNftOwnerProfiles';
+import { useNftMinterProfiles } from '@/hooks/useNftMinterProfiles';
+import { useNftCollectionProfiles } from '@/hooks/useNftCollectionProfiles';
 
 export function NftList() {
   const navigate = useNavigate();
@@ -27,16 +30,12 @@ export function NftList() {
   const [multiSelect, setMultiSelect] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const { addError } = useErrors();
+
   const {
     nfts,
-    collections,
-    ownerDids,
-    minterDids,
-    owner,
-    collection,
-    isLoading,
+    isLoading: isLoadingNfts,
     updateNfts,
-    total,
+    total: nftTotal,
   } = useNftData({
     pageSize,
     sort,
@@ -49,6 +48,48 @@ export function NftList() {
     page: params.page,
   });
 
+  const {
+    collections,
+    collection,
+    isLoading: isLoadingCollections,
+    collectionsTotal,
+    updateCollectionProfiles,
+  } = useNftCollectionProfiles({
+    pageSize,
+    page: params.page,
+    group,
+    showHidden,
+    collectionId,
+  });
+
+  const {
+    ownerDids,
+    owner,
+    isLoading: isLoadingOwners,
+    ownerDidsTotal,
+    updateOwnerProfiles,
+  } = useNftOwnerProfiles({
+    pageSize,
+    page: params.page,
+    group,
+    showHidden,
+    ownerDid,
+  });
+
+  const {
+    minterDids,
+    minter,
+    isLoading: isLoadingMinters,
+    minterDidsTotal,
+    updateMinterProfiles,
+  } = useNftMinterProfiles({
+    pageSize,
+    page: params.page,
+    group,
+    showHidden,
+    minterDid,
+  });
+
   // Reset multi-select when route changes
   useEffect(() => {
     setMultiSelect(false);
@@ -56,9 +97,6 @@ export function NftList() {
   }, [collectionId, ownerDid, minterDid, group]);
 
   const canLoadMore = useCallback(() => {
-    // If we're grouping by collection, or filtering by collection,owner,
-    // or minter, use the total number of nfts in the current page
-    // otherwise use the appropriate grouping list length
     if (collectionId || ownerDid || minterDid || group === NftGroupMode.None) {
       return nfts.length === pageSize;
     } else if (group === NftGroupMode.Collection) {
@@ -81,6 +119,27 @@ export function NftList() {
     pageSize,
   ]);
 
+  // Calculate total based on current view
+  const total = useMemo(() => {
+    if (group === NftGroupMode.Collection && !collectionId) {
+      return collectionsTotal;
+    } else if (group === NftGroupMode.OwnerDid) {
+      return ownerDidsTotal;
+    } else if (group === NftGroupMode.MinterDid) {
+      return minterDidsTotal;
+    }
+    return nftTotal;
+  }, [
+    group,
+    collectionId,
+    nftTotal,
+    collectionsTotal,
+    ownerDidsTotal,
+    minterDidsTotal,
+  ]);
+
+  const isLoading = isLoadingNfts || isLoadingOwners || isLoadingMinters || isLoadingCollections;
+
   return (
     <>
       <Header
@@ -91,6 +150,7 @@ export function NftList() {
             ownerDid={ownerDid}
             owner={owner}
             minterDid={minterDid}
+            minter={minter}
             group={group}
           />
         }
@@ -133,6 +193,9 @@ export function NftList() {
             ownerDids={ownerDids}
             minterDids={minterDids}
             updateNfts={updateNfts}
+            updateCollectionProfiles={updateCollectionProfiles}
+            updateOwnerProfiles={updateOwnerProfiles}
+            updateMinterProfiles={updateMinterProfiles}
             page={params.page}
             multiSelect={multiSelect}
             selected={selected}
