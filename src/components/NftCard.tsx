@@ -466,15 +466,17 @@ const NftCardComponent = ({
         <Trans>This will send the NFT to the provided address.</Trans>
       </TransferDialog>
 
-      <AssignNftDialog
-        title={t`Assign Profile`}
-        open={assignOpen}
-        setOpen={setAssignOpen}
-        onSubmit={onAssignSubmit}
-        aria-label={t`Assign profile for ${nftName}`}
-      >
-        <Trans>This will assign the NFT to the selected profile.</Trans>
-      </AssignNftDialog>
+      {assignOpen && (
+        <AssignNftDialog
+          title={t`Assign Profile`}
+          open={assignOpen}
+          setOpen={setAssignOpen}
+          onSubmit={onAssignSubmit}
+          aria-label={t`Assign profile for ${nftName}`}
+        >
+          <Trans>This will assign the NFT to the selected profile.</Trans>
+        </AssignNftDialog>
+      )}
 
       <Dialog open={addUrlOpen} onOpenChange={setAddUrlOpen}>
         <DialogContent>
