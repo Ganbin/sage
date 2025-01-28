@@ -49,6 +49,9 @@ import QRScanner from './pages/QrScanner';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Slide } from 'react-toastify';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
 
 export interface DarkModeContext {
   toggle: () => void;
@@ -127,34 +130,36 @@ export default function App() {
   }, [dark]);
 
   return (
-    <LanguageProvider locale={locale} setLocale={setLocale}>
-      <DarkModeContext.Provider value={darkMode}>
-        <SafeAreaProvider>
-          <ErrorProvider>
-            <AppInner />
-          </ErrorProvider>
-        </SafeAreaProvider>
-      </DarkModeContext.Provider>
-      <ToastContainer
-        position='bottom-right'
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme={dark ? 'dark' : 'light'}
-        transition={Slide}
-        style={
-          {
-            '--toastify-toast-transition-timing': 'ease',
-            '--toastify-toast-transition-duration': '750ms',
-          } as React.CSSProperties
-        }
-      />
-    </LanguageProvider>
+    <QueryClientProvider client={queryClient}>
+      <LanguageProvider locale={locale} setLocale={setLocale}>
+        <DarkModeContext.Provider value={darkMode}>
+          <SafeAreaProvider>
+            <ErrorProvider>
+              <AppInner />
+            </ErrorProvider>
+          </SafeAreaProvider>
+        </DarkModeContext.Provider>
+        <ToastContainer
+          position='bottom-right'
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme={dark ? 'dark' : 'light'}
+          transition={Slide}
+          style={
+            {
+              '--toastify-toast-transition-timing': 'ease',
+              '--toastify-toast-transition-duration': '750ms',
+            } as React.CSSProperties
+          }
+        />
+      </LanguageProvider>
+    </QueryClientProvider>
   );
 }
 

@@ -36,6 +36,8 @@ import { useLocalStorage } from 'usehooks-ts';
 import { TokenListView } from '@/components/TokenListView';
 import { TokenGridView } from '@/components/TokenGridView';
 import { ViewToggle, ViewMode } from '@/components/ViewToggle';
+import useCats from '@/hooks/useCats';
+import { Loading } from '@/components/Loading';
 
 enum TokenView {
   Name = 'name',
@@ -46,18 +48,18 @@ export function TokenList() {
   const navigate = useNavigate();
   const walletState = useWalletState();
   const { getBalanceInUsd, getPriceInUsd } = usePrices();
-  const { addError } = useErrors();
   const [params, setParams] = useTokenParams();
   const { view, showHidden, showZeroBalance } = params;
-  const [cats, setCats] = useState<CatRecord[]>([]);
   const [viewMode, setViewMode] = useLocalStorage<ViewMode>(
     'token-view-mode',
     'grid',
   );
 
+  const { data, isLoading, isFetching, isPending, refetch } = useCats();
+
   const catsWithBalanceInUsd = useMemo(
     () =>
-      cats.map((cat) => {
+      data?.map((cat) => {
         const balance = Number(toDecimal(cat.balance, 3));
         const usdValue = parseFloat(
           getBalanceInUsd(cat.asset_id, balance.toString()),
@@ -70,10 +72,10 @@ export function TokenList() {
           priceInUsd: getPriceInUsd(cat.asset_id),
         };
       }),
-    [cats, getBalanceInUsd, getPriceInUsd],
+    [data, getBalanceInUsd, getPriceInUsd],
   );
 
-  const sortedCats = catsWithBalanceInUsd.sort((a, b) => {
+  const sortedCats = catsWithBalanceInUsd?.sort((a, b) => {
     if (a.visible && !b.visible) return -1;
     if (!a.visible && b.visible) return 1;
 
@@ -93,7 +95,7 @@ export function TokenList() {
     return aName.localeCompare(bName);
   });
 
-  const filteredCats = sortedCats.filter((cat) => {
+  const filteredCats = sortedCats?.filter((cat) => {
     if (!showHidden && !cat.visible) {
       return false;
     }
@@ -112,20 +114,9 @@ export function TokenList() {
     return true;
   });
 
-  const hasHiddenAssets = !!sortedCats.find((cat) => !cat.visible);
-
-  const updateCats = useCallback(
-    () =>
-      commands
-        .getCats({})
-        .then((data) => setCats(data.cats))
-        .catch(addError),
-    [addError],
-  );
+  const hasHiddenAssets = !!sortedCats?.find((cat) => !cat.visible);
 
   useEffect(() => {
-    updateCats();
-
     const unlisten = events.syncEvent.listen((event) => {
       const type = event.payload.type;
 
@@ -134,14 +125,14 @@ export function TokenList() {
         type === 'puzzle_batch_synced' ||
         type === 'cat_info'
       ) {
-        updateCats();
+        refetch();
       }
     });
 
     return () => {
       unlisten.then((u) => u());
     };
-  }, [updateCats]);
+  }, [refetch]);
 
   return (
     <>
@@ -256,41 +247,45 @@ export function TokenList() {
             </div>
           )}
         </div>
-
-        {viewMode === 'grid' ? (
-          <TokenGridView
-            cats={filteredCats}
-            xchBalance={walletState.sync.balance.toString()}
-            xchDecimals={walletState.sync.unit.decimals}
-            xchPrice={getPriceInUsd('xch')}
-            xchBalanceUsd={Number(
-              getBalanceInUsd(
-                'xch',
-                toDecimal(
-                  walletState.sync.balance,
-                  walletState.sync.unit.decimals,
-                ),
-              ),
-            )}
-          />
-        ) : (
-          <div className='mt-4'>
-            <TokenListView
-              cats={filteredCats}
-              xchBalance={walletState.sync.balance.toString()}
-              xchDecimals={walletState.sync.unit.decimals}
-              xchPrice={getPriceInUsd('xch')}
-              xchBalanceUsd={Number(
-                getBalanceInUsd(
-                  'xch',
-                  toDecimal(
-                    walletState.sync.balance,
-                    walletState.sync.unit.decimals,
+        {(isLoading || isFetching || isPending) && <Loading />}
+        {filteredCats && (
+          <>
+            {viewMode === 'grid' ? (
+              <TokenGridView
+                cats={filteredCats}
+                xchBalance={walletState.sync.balance.toString()}
+                xchDecimals={walletState.sync.unit.decimals}
+                xchPrice={getPriceInUsd('xch')}
+                xchBalanceUsd={Number(
+                  getBalanceInUsd(
+                    'xch',
+                    toDecimal(
+                      walletState.sync.balance,
+                      walletState.sync.unit.decimals,
+                    ),
                   ),
-                ),
-              )}
-            />
-          </div>
+                )}
+              />
+            ) : (
+              <div className='mt-4'>
+                <TokenListView
+                  cats={filteredCats}
+                  xchBalance={walletState.sync.balance.toString()}
+                  xchDecimals={walletState.sync.unit.decimals}
+                  xchPrice={getPriceInUsd('xch')}
+                  xchBalanceUsd={Number(
+                    getBalanceInUsd(
+                      'xch',
+                      toDecimal(
+                        walletState.sync.balance,
+                        walletState.sync.unit.decimals,
+                      ),
+                    ),
+                  )}
+                />
+              </div>
+            )}
+          </>
         )}
       </Container>
     </>

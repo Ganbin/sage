@@ -108,12 +108,12 @@ const NftCardComponent = ({
   const [burnOpen, setBurnOpen] = useState(false);
   const [response, setResponse] = useState<TransactionResponse | null>(null);
 
-  useEffect(() => {
-    commands
-      .getNftData({ nft_id: nft.launcher_id })
-      .then((response) => setData(response.data))
-      .catch(addError);
-  }, [nft.launcher_id, addError]);
+  // useEffect(() => {
+  //   commands
+  //     .getNftData({ nft_id: nft.launcher_id })
+  //     .then((response) => setData(response.data))
+  //     .catch(addError);
+  // }, [nft.launcher_id, addError]);
 
   const toggleVisibility = () => {
     commands
@@ -234,7 +234,7 @@ const NftCardComponent = ({
                   width='150'
                   height='150'
                   className='h-auto w-auto object-cover transition-all group-hover:scale-105 aspect-square color-[transparent]'
-                  src={nftUri(data?.mime_type ?? null, data?.blob ?? null)}
+                  src={`https://assets.mainnet.mintgarden.io/thumbnails/${nft.data_hash}_512.webp`}
                 />
               </TooltipTrigger>
               <TooltipContent>

@@ -12,11 +12,13 @@ import { ImagePlusIcon, EyeIcon } from 'lucide-react';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useNftData } from '@/hooks/useNftData';
+import { useNftData2 } from '@/hooks/useNftData2';
 import { useErrors } from '@/hooks/useErrors';
 import { t } from '@lingui/core/macro';
 import { useNftOwnerProfiles } from '@/hooks/useNftOwnerProfiles';
 import { useNftMinterProfiles } from '@/hooks/useNftMinterProfiles';
 import { useNftCollectionProfiles } from '@/hooks/useNftCollectionProfiles';
+import { Loading } from '@/components/Loading';
 
 export function NftList() {
   const navigate = useNavigate();
@@ -36,7 +38,7 @@ export function NftList() {
     isLoading: isLoadingNfts,
     updateNfts,
     total: nftTotal,
-  } = useNftData({
+  } = useNftData2({
     pageSize,
     sort,
     group,
@@ -138,7 +140,11 @@ export function NftList() {
     minterDidsTotal,
   ]);
 
-  const isLoading = isLoadingNfts || isLoadingOwners || isLoadingMinters || isLoadingCollections;
+  const isLoading =
+    isLoadingNfts ||
+    isLoadingOwners ||
+    isLoadingMinters ||
+    isLoadingCollections;
 
   return (
     <>
@@ -183,6 +189,7 @@ export function NftList() {
         />
 
         <main aria-label={t`NFT Collection`} aria-busy={isLoading}>
+          {isLoading && <Loading />}
           <NftCardList
             collectionId={collectionId}
             ownerDid={ownerDid}
